@@ -1,13 +1,13 @@
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
   width: 100%;
-  display: flex; 
-  justify-content: center; 
-  align-items: center; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-
 
 #loading {
   position: fixed;
@@ -21,12 +21,13 @@ html, body {
   align-items: center;
   font-weight: bold;
   color: #cfcfcf;
-  font-size: 18px;;
+  font-size: 18px;
   z-index: 1000;
 }
 
-
 #game {
-  border-radius: 20px;
   overflow: hidden;
+  canvas {
+    display: block;
+  }
 }

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "phaser": "^3.80.1",
+    "ua-parser-js": "^1.0.37",
     "webfontloader": "^1.6.28"
   }
 }
