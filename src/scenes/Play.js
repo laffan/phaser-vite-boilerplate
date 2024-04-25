@@ -1,39 +1,47 @@
 import { Scene } from "phaser";
+import { CameraController } from "./../prefabs/CameraController";
+import { addLazyLayers, checkLayerVisability } from "../helpers/lazyPhaser";
 
 export class PlayScene extends Scene {
   constructor() {
     super("PlayScene");
+    this.worldViewLoaded = false;
+    // Set of loading images
+    this.loading = new Set();
   }
 
-  preload() {}
+  create() {
+    this.cameraController = new CameraController(this);
 
-  create() { 
-    this.add.text(50, 50, "Phaser 3.7", {
-      fontFamily: "digitalDisco",
-      fontSize: "32px",
-      fill: "#ffffff",
-    });
+    if (this.worldViewLoaded) {
+      console.log("this.cameras.main.worldView.width");
+      console.log(this.cameras.main.worldView.width);
 
- // Add the sprite and make it interactive
-    this.demoImg = this.add.sprite(50, 90, "demo_image").setInteractive({ useHandCursor: true });
+      this.map = this.add.tilemap("demo_JSON"); // Create map
 
-    // Set initial properties
-    this.demoImg.setOrigin(0);
-    this.demoImg.setAlpha(0.1);
-    this.demoImg.setScale(0.5);
+      const background = this.map.addTilesetImage(
+        "TS_Background_Tiles",
+        "KY_background"
+      ); // Add background tileset
 
-    this.input.setDraggable(this.demoImg);
-    this.input.on('dragstart', function (pointer, gameObject) {
-      gameObject.setAlpha(0.5);
-    });
-    this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
-      gameObject.x = dragX;
-      gameObject.y = dragY;
-    });
-    this.input.on('dragend', function (pointer, gameObject) {
-      gameObject.setAlpha(0.1);
-    });
+      this.map.createLayer("LR_Background", background, 0, 0); // Add BG
+      // 🌺  Add layers
+      addLazyLayers(this, ["LR_Media"], "demoLevel");
+      // 🌺  First visibility check
+      checkLayerVisability(this, "demoLevel", this.cameras.main.worldView);
+    }
   }
 
-  update() {}
+  update() {
+    //   // For some reason worldView's size isn't ready when the scene loads.
+    if (this.cameras.main.worldView.width > 0 && !this.worldViewLoaded) {
+      this.worldViewLoaded = true;
+      this.create();
+    }
+
+    if (this.cameraController.isDragging) {
+      // 🌺  If camera is dragging, update check
+      checkLayerVisability(this, "demoLevel", this.cameras.main.worldView);
+    }
+  }
 }

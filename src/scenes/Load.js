@@ -1,9 +1,9 @@
 import { Scene } from "phaser";
 import { loadFonts } from "../helpers/loadFonts";
+import { loadLazyJSON, addLazyLayers } from "../helpers/lazyPhaser";
 
 export class LoadScene extends Scene {
-
-  constructor(){
+  constructor() {
     super("LoadScene");
     this.fontsLoaded = false;
     this.assetsLoaded = false;
@@ -28,18 +28,27 @@ export class LoadScene extends Scene {
       this
     );
 
-    this.load.path = "./assets/";
-    this.load.image("demo_image", "img/demo-image.png");
+    const JSONFilename = "demo.json";
 
+    // Parse tiled JSON normally
+    this.load.tilemapTiledJSON("demo_JSON", JSONFilename);
 
+    // 🌺 Save Tiled JSON to registry
+    loadLazyJSON(this, "demoLevel", JSONFilename);
+
+    // Add background tiles
+    this.load.image("KY_background", "assets/media/background-test.jpg");
+  
     this.load.on("complete", () => {
       this.assetsLoaded = true;
     });
+
     this.events.once(`fontsLoaded_${this.scene.key}`, () => {
       this.fontsLoaded = true;
     });
-  }
 
+    this.cameras.main.setBounds(0, 0, width, height);
+  }
 
   update() {
     if (this.assetsLoaded && this.fontsLoaded) {
