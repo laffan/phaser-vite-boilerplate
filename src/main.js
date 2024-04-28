@@ -2,6 +2,7 @@
 import Phaser from 'phaser';
 import isMobile from './helpers/isMobile';
 import { LoadScene } from './scenes/Load';
+import { Overlay } from './scenes/Overlay';
 import { PlayScene } from './scenes/Play';
 
 const gameParent = "game";
@@ -29,7 +30,7 @@ const gameConfig = {
       },
     },
   },
-  scene: [LoadScene, PlayScene],
+  scene: [LoadScene, PlayScene, Overlay],
 };
 
 new Phaser.Game(gameConfig);

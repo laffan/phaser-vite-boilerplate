@@ -3,7 +3,7 @@ export const loadFonts = (fontList, scene) => {
   const totalCount = fontList.length;
 
   fontList.forEach(({ name, url }) => {
-    console.log("Loading font", name, url);
+    // console.log("Loading font", name, url);
     const newFont = new FontFace(name, `url(${url})`);
     newFont
       .load()
@@ -11,7 +11,6 @@ export const loadFonts = (fontList, scene) => {
         document.fonts.add(loaded);
         loadedCount++;
         if (loadedCount === totalCount) {
-          console.log("Fonts done loading.")
           scene.events.emit(`fontsLoaded_${scene.scene.key}`);
         }
       })

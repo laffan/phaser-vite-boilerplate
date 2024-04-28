@@ -1,46 +1,51 @@
 import { Scene } from "phaser";
 import { CameraController } from "./../prefabs/CameraController";
-import { addLazyLayers, checkLayerVisability } from "../helpers/lazyPhaser";
+import { addLazyLayers, checkLayerVisability } from "../helpers/lazyLoadLayer";
 
 export class PlayScene extends Scene {
   constructor() {
     super("PlayScene");
     this.worldViewLoaded = false;
-    // Set of loading images
-    this.loading = new Set();
+    this.cameraController = false;
   }
 
   create() {
+    console.log("Create");
     this.cameraController = new CameraController(this);
 
-    if (this.worldViewLoaded) {
-      console.log("this.cameras.main.worldView.width");
-      console.log(this.cameras.main.worldView.width);
+    // Set up event to trigger camera scrolling from other scenes
+    this.events.on('scrollCameraEvent', this.scrollCameraHandler, this );
 
-      this.map = this.add.tilemap("demo_JSON"); // Create map
+    // Create map for tiles 
+    this.map = this.add.tilemap("demo_JSON"); // Create map
 
-      const background = this.map.addTilesetImage(
-        "TS_Background_Tiles",
-        "KY_background"
-      ); // Add background tileset
+    // Add Background tiles
+    const background = this.map.addTilesetImage(
+      "TS_Background_Tiles",
+      "KY_background"
+    ); 
 
-      this.map.createLayer("LR_Background", background, 0, 0); // Add BG
-      // 🌺  Add layers
-      addLazyLayers(this, ["LR_Media"], "demoLevel");
-      // 🌺  First visibility check
-      checkLayerVisability(this, "demoLevel", this.cameras.main.worldView);
-    }
+    this.map.createLayer("LR_Background", background, 0, 0); // Add BG
+
+    // 🌺  1. Add lazy layers
+    addLazyLayers(this, ["LR_Media"], "demoLevel");
+
+  }
+
+  scrollCameraHandler( options ){
+      const { x, y, speed } = options;
+      this.cameraController.scrollCamera(x, y, speed);
   }
 
   update() {
-    //   // For some reason worldView's size isn't ready when the scene loads.
+    // 🌺  2. Initialize first Layer check after camera loads
     if (this.cameras.main.worldView.width > 0 && !this.worldViewLoaded) {
       this.worldViewLoaded = true;
-      this.create();
+      checkLayerVisability(this, "demoLevel", this.cameras.main.worldView);
     }
 
-    if (this.cameraController.isDragging) {
-      // 🌺  If camera is dragging, update check
+    // 🌺  3. Subsequent layer checks when camea moves.
+    if (this.cameraController.isMoving) {
       checkLayerVisability(this, "demoLevel", this.cameras.main.worldView);
     }
   }

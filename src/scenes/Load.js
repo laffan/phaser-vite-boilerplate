@@ -1,6 +1,5 @@
 import { Scene } from "phaser";
 import { loadFonts } from "../helpers/loadFonts";
-import { loadLazyJSON, addLazyLayers } from "../helpers/lazyPhaser";
 
 export class LoadScene extends Scene {
   constructor() {
@@ -33,12 +32,15 @@ export class LoadScene extends Scene {
     // Parse tiled JSON normally
     this.load.tilemapTiledJSON("demo_JSON", JSONFilename);
 
-    // 🌺 Save Tiled JSON to registry
-    loadLazyJSON(this, "demoLevel", JSONFilename);
+    // 🌺 Load raw Tiled JSON in to game 
+    this.load.json({
+      key: "demoLevel",
+      url: JSONFilename,
+    });
 
     // Add background tiles
     this.load.image("KY_background", "assets/media/background-test.jpg");
-  
+
     this.load.on("complete", () => {
       this.assetsLoaded = true;
     });
@@ -54,6 +56,7 @@ export class LoadScene extends Scene {
     if (this.assetsLoaded && this.fontsLoaded) {
       this.loadingBar.destroy();
       this.scene.start("PlayScene");
+      this.scene.launch("Overlay");
     }
   }
 }
