@@ -4,6 +4,7 @@ import MainCircle from "./../prefabs/MainCircle";
 import EntryDot from "./../prefabs/EntryDot";
 import Viewer from "./../prefabs/Viewer";
 import SecondHand from "./../prefabs/SecondHand";
+import isMobile from './../helpers/isMobile';
 
 export class PlayScene extends Scene {
   constructor() {
@@ -13,8 +14,44 @@ export class PlayScene extends Scene {
         ? window.innerHeight
         : window.innerWidth;
     this.mainCircleSize = this.windowSize / 1.5; // Configurable circle size
+    this.sizeRatio = isMobile() ? 1.1: 1.5; // Default size ratio
+    
     this.handleResize = this.handleResize.bind(this);
     this.entryDots = [];
+    
+    // Make this method accessible from console for debugging
+    window.setMainCircleSize = this.setMainCircleSize.bind(this);
+  }
+  
+  // Method to explicitly set main circle size and update everything
+  setMainCircleSize(size) {
+    if (typeof size === 'number' && size > 0) {
+      this.mainCircleSize = size;
+      console.log(`Setting mainCircleSize to ${size}`);
+      this.sizeRatio = this.windowSize / size;
+    } else if (typeof size === 'string' && size.includes('/')) {
+      // Allow setting as ratio like "1.5" for windowSize/1.5
+      const ratio = parseFloat(size);
+      if (!isNaN(ratio) && ratio > 0) {
+        this.sizeRatio = ratio;
+        this.mainCircleSize = this.windowSize / ratio;
+        console.log(`Setting mainCircleSize to ${this.mainCircleSize} (windowSize/${ratio})`);
+      }
+    }
+    
+    // Recreate all elements with new size
+    if (this.scene && this.scene.isActive()) {
+      this.createCircle();
+      this.drawEntries();
+      this.createSecondHand();
+      
+      // Refresh viewer if exists
+      if (this.currentViewer && this.currentViewer.entry) {
+        this.showEntry(this.currentViewer.entry);
+      }
+    }
+    
+    return this.mainCircleSize;
   }
 
   create() {
@@ -172,7 +209,9 @@ export class PlayScene extends Scene {
       window.innerHeight < window.innerWidth
         ? window.innerHeight
         : window.innerWidth;
-    this.mainCircleSize = this.windowSize / 1.5; // Update size based on window
+    this.mainCircleSize = this.windowSize / this.sizeRatio; // Update size based on window and ratio
+    console.log(`Main circle size: ${this.mainCircleSize}`);
+    
     this.circle = new MainCircle(
       this,
       window.innerWidth / 2,
@@ -211,7 +250,8 @@ export class PlayScene extends Scene {
 
       const dotX = centerX + radius * Math.cos(angle);
       const dotY = centerY + radius * Math.sin(angle);
-      const dot = new EntryDot(this, dotX, dotY, entry, 20);
+      // Use default size from EntryDot constants
+      const dot = new EntryDot(this, dotX, dotY, entry);
       this.entryDots.push(dot);
       
       // If this entry was active before, reactivate it

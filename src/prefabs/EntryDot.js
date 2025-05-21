@@ -20,7 +20,13 @@ export default class EntryDot extends Phaser.GameObjects.Sprite {
     this.normalKey = normalKey;
     this.radius = EntryDot.NORMAL_RADIUS; // Start with normal radius
     this.activeRadius = EntryDot.ACTIVE_RADIUS;
+    
+    // Ensure correct origins and display size
     this.setOrigin(0.5, 0.5);
+    
+    // Make sure the sprite displays at the exact size we want
+    const dotDiameter = this.radius * 2;
+    this.setDisplaySize(dotDiameter, dotDiameter);
 
     scene.add.existing(this);
     
@@ -95,6 +101,10 @@ export default class EntryDot extends Phaser.GameObjects.Sprite {
     this.setTexture(this.activeKey);
     this.radius = this.activeRadius; // Update the collision radius
     
+    // Update display size to match the active radius
+    const activeDiameter = this.activeRadius * 2;
+    this.setDisplaySize(activeDiameter, activeDiameter);
+    
     // Add a small visual effect
     this.scene.tweens.add({
       targets: this,
@@ -114,6 +124,10 @@ export default class EntryDot extends Phaser.GameObjects.Sprite {
     // Switch to normal texture
     this.setTexture(this.normalKey);
     this.radius = EntryDot.NORMAL_RADIUS; // Update the collision radius
+    
+    // Update display size to match the normal radius
+    const normalDiameter = EntryDot.NORMAL_RADIUS * 2;
+    this.setDisplaySize(normalDiameter, normalDiameter);
   }
   
   // Update the inner dot position when the main dot moves
@@ -141,12 +155,22 @@ export default class EntryDot extends Phaser.GameObjects.Sprite {
   
   static drawDot(scene, radius) {
     const key = `entry-dot-${Phaser.Math.RND.uuid()}`;
+    
+    // Calculate texture size with a slight padding for the line thickness
+    const padding = 1;
+    const textureSize = (radius * 2) + (padding * 2);
+    
     const graphics = scene.make.graphics({ x: 0, y: 0, add: false });
 
-    graphics.lineStyle(1, 0xffffff, 1); // Outline only, width 3
-    graphics.strokeCircle(radius, radius, radius);
+    // Use a 1px line with full alpha
+    graphics.lineStyle(1, 0xffffff, 1);
+    
+    // Center the circle in the texture, accounting for the padding
+    const centerPoint = radius + padding;
+    graphics.strokeCircle(centerPoint, centerPoint, radius);
 
-    graphics.generateTexture(key, radius * 2, radius * 2);
+    // Generate the texture at the exact size needed
+    graphics.generateTexture(key, textureSize, textureSize);
     graphics.destroy();
 
     return key;

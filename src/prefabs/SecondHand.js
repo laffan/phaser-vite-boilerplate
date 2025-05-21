@@ -189,11 +189,23 @@ export default class SecondHand extends Phaser.GameObjects.Container {
   // Redraw the hand with the current length
   redrawHand() {
     this.hand.clear();
+    
+    // Use original thickness but ensure it's crisp
     this.hand.lineStyle(this.thickness, this.color, 1);
     
-    // Draw the line sticking out from the circle's edge
-    // Start at the circle's edge, extend outward by the specified length
-    this.hand.lineBetween(0, -this.radius, 0, -(this.radius + this.currentLength));
+    // Calculate exact line coordinates
+    const startY = -this.radius;
+    const endY = -(this.radius + this.currentLength);
+    
+    // Draw using path for better precision
+    this.hand.beginPath();
+    this.hand.moveTo(0, startY);
+    this.hand.lineTo(0, endY);
+    this.hand.strokePath();
+    
+    // Add a small circle at the end of the line for better visibility
+    this.hand.fillStyle(this.color, 1);
+    this.hand.fillCircle(0, endY, this.thickness / 2);
   }
   
   // Set the hand length with optional animation

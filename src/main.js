@@ -1,6 +1,5 @@
 // src/main.js
 import Phaser from 'phaser';
-import isMobile from './helpers/isMobile';
 import { LoadScene } from './scenes/Load';
 import { PlayScene } from './scenes/Play';
 

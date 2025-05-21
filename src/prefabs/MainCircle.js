@@ -9,32 +9,46 @@ export default class MainCircle extends Phaser.GameObjects.Sprite {
   }
 
   static createCircleTexture(scene, size, color) {
+    // Create a texture at the exact size we need
     const key = `mainCircle-${color}-${size}-${Phaser.Math.RND.uuid()}`;
+    
+    // Add a little padding for the line
+    const padding = 1;
+    const effectiveSize = size + padding * 2;
     const graphics = scene.add.graphics();
+    
+    // Use a clean 1px line
     graphics.lineStyle(1, color, 1);
 
     // Dashed circle parameters
-    const radius = (size - 1) / 2;
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const dashPx = 5;
-    const gapPx = 8;
+    const radius = size / 2;
+    const centerX = effectiveSize / 2;
+    const centerY = effectiveSize / 2;
+    const dashPx = 8;
+    const gapPx = 10;
     const dashLength = dashPx / radius; // radians per dash
     const gapLength = gapPx / radius;   // radians per gap
 
+    // Draw each dash segment with precise pixel alignment
     for (let angle = 0; angle < Math.PI * 2; angle += dashLength + gapLength) {
       const startAngle = angle;
       const endAngle = Math.min(angle + dashLength, Math.PI * 2);
 
-      const x1 = centerX + radius * Math.cos(startAngle);
-      const y1 = centerY + radius * Math.sin(startAngle);
-      const x2 = centerX + radius * Math.cos(endAngle);
-      const y2 = centerY + radius * Math.sin(endAngle);
-
-      graphics.lineBetween(x1, y1, x2, y2);
+      // Calculate coordinates precisely
+      let x1 = centerX + radius * Math.cos(startAngle);
+      let y1 = centerY + radius * Math.sin(startAngle);
+      let x2 = centerX + radius * Math.cos(endAngle);
+      let y2 = centerY + radius * Math.sin(endAngle);
+      
+      // Draw the line segment
+      graphics.beginPath();
+      graphics.moveTo(x1, y1);
+      graphics.lineTo(x2, y2);
+      graphics.strokePath();
     }
 
-    graphics.generateTexture(key, size, size);
+    // Generate the texture
+    graphics.generateTexture(key, effectiveSize, effectiveSize);
     graphics.destroy();
     return key;
   }
