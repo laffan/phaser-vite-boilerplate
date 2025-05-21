@@ -4,7 +4,7 @@ export class Overlay extends Phaser.Scene {
   }
 
   create() {
-    this.button = this.add.text(50, 50, "Waypoint One", {
+    this.button = this.add.text(50, 50, "Fixed Point Overlay", {
       fontFamily: "digitalDisco",
       fontSize: "32px",
       fill: "#000000",

@@ -19,6 +19,8 @@ export class LoadScene extends Scene {
       this.loadingBar.fillRect(0, centerY, value, 5); // (x, y, w, h)
     });
 
+    this.load.json("entryData", "entries/entry-data.json");
+
     loadFonts(
       [
         { name: "digitalDisco", url: "./fonts/DigitalDisco.ttf" },
@@ -26,20 +28,6 @@ export class LoadScene extends Scene {
       ],
       this
     );
-
-    const JSONFilename = "demo.json";
-
-    // Parse tiled JSON normally
-    this.load.tilemapTiledJSON("demo_JSON", JSONFilename);
-
-    // 🌺 Load raw Tiled JSON in to game 
-    this.load.json({
-      key: "demoLevel",
-      url: JSONFilename,
-    });
-
-    // Add background tiles
-    this.load.image("KY_background", "assets/media/background-test.jpg");
 
     this.load.on("complete", () => {
       this.assetsLoaded = true;
