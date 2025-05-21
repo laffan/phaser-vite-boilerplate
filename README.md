@@ -1,5 +1,3 @@
-# Phaser / Vite Starter
+# Double Double (Circle)
 
-A simple-as-possible boilerplate for Phaser and Vite.
-
-Default font courtesy of [fontenddev](https://fontenddev.com/)
+Time based photo viewer.
