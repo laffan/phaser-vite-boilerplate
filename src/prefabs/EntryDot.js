@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { DateTime } from 'luxon';
+import Tooltip from './Tooltip';
 
 export default class EntryDot extends Phaser.GameObjects.Sprite {
   static activeDot = null; // Static property to track the currently active dot
@@ -34,13 +35,14 @@ export default class EntryDot extends Phaser.GameObjects.Sprite {
     this.innerDot = scene.add.circle(x, y, EntryDot.ACTIVE_RADIUS * 0.75, 0xffffff, 1);
     this.innerDot.setVisible(false);
 
-    // Tooltip text object (hidden by default)
-    this.tooltip = scene.add.text(0, 0, '', {
-      font: '16px Arial',
-      fill: '#fff',
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      padding: { x: 8, y: 4 }
-    }).setDepth(1000).setVisible(false);
+    // Create gray hover dot (smaller than main dot, initially invisible)
+    this.hoverDot = scene.add.circle(x, y, EntryDot.NORMAL_RADIUS * 0.5, 0x888888, 1);
+    this.hoverDot.setVisible(false);
+    this.hoverDot.setDepth(999);
+
+    // Tooltip instance (shared per EntryDot)
+    this.tooltip = scene.tooltipInstance || new Tooltip(scene);
+    scene.tooltipInstance = this.tooltip;
 
     // Enable input and handle click
     this.setInteractive({ useHandCursor: true });
@@ -60,26 +62,42 @@ export default class EntryDot extends Phaser.GameObjects.Sprite {
 
     this.on('pointerover', (pointer) => {
       const dt = EntryDot.parseTimestamp(this.entry.timestamp);
-      const formatted = dt
-        ? `${dt.toFormat('h:mm a')}\n${dt.toFormat('cccc, LLLL d')}`
-        : 'Invalid date';
+      const line1 = dt ? dt.toFormat('h:mm a') : 'Invalid date';
+      const line2 = dt ? dt.toFormat('cccc, LLLL d') : '';
 
-      this.tooltip.setText(formatted);
-
-      // Decide tooltip side based on dot position
       const offset = 10;
+      let tooltipX, tooltipY, alignRight;
       if (this.x < this.centerX) {
-        // Left side: show tooltip to the left
-        this.tooltip.setPosition(this.x - this.width / 2 - this.tooltip.width - offset, this.y - this.height / 2);
+        // Tooltip on left: right-align, position to left of dot
+        tooltipX = this.x - this.width / 2 - offset;
+        alignRight = true;
       } else {
-        // Right side: show tooltip to the right
-        this.tooltip.setPosition(this.x + this.width / 2 + offset, this.y - this.height / 2);
+        // Tooltip on right: left-align, position to right of dot
+        tooltipX = this.x + this.width / 2 + offset;
+        alignRight = false;
       }
-      this.tooltip.setVisible(true);
+      tooltipY = this.y - this.height / 2;
+
+      this.tooltip.show(line1, line2, tooltipX, tooltipY, alignRight);
+
+      // Show gray hover dot only if not active
+      if (this.hoverDot) {
+        if (EntryDot.activeDot !== this) {
+          this.hoverDot.setPosition(this.x, this.y);
+          this.hoverDot.setVisible(true);
+        } else {
+          this.hoverDot.setVisible(false);
+        }
+      }
     });
 
     this.on('pointerout', () => {
-      this.tooltip.setVisible(false);
+      this.tooltip.hide();
+
+      // Hide gray hover dot
+      if (this.hoverDot) {
+        this.hoverDot.setVisible(false);
+      }
     });
   }
 
@@ -136,6 +154,9 @@ export default class EntryDot extends Phaser.GameObjects.Sprite {
     this.y = y;
     if (this.innerDot) {
       this.innerDot.setPosition(x, y);
+    }
+    if (this.hoverDot) {
+      this.hoverDot.setPosition(x, y);
     }
   }
   

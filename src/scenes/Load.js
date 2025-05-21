@@ -44,7 +44,7 @@ export class LoadScene extends Scene {
     if (this.assetsLoaded && this.fontsLoaded) {
       this.loadingBar.destroy();
       this.scene.start("PlayScene");
-      this.scene.launch("Overlay");
+      // this.scene.launch("Overlay");
     }
   }
 }

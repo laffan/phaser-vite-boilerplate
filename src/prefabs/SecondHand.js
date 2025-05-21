@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 export default class SecondHand extends Phaser.GameObjects.Container {
-  constructor(scene, x, y, radius, length = 5, color = 0xff0000, thickness = 2) {
+  constructor(scene, x, y, radius, length = 5, color = 0x888888, thickness = 2) {
     super(scene, x, y);
     
     this.radius = radius;

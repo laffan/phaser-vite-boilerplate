@@ -5,6 +5,7 @@ import EntryDot from "./../prefabs/EntryDot";
 import Viewer from "./../prefabs/Viewer";
 import SecondHand from "./../prefabs/SecondHand";
 import isMobile from './../helpers/isMobile';
+import KeyboardControl from './../prefabs/KeyboardControl';
 
 export class PlayScene extends Scene {
   constructor() {
@@ -14,7 +15,7 @@ export class PlayScene extends Scene {
         ? window.innerHeight
         : window.innerWidth;
     this.mainCircleSize = this.windowSize / 1.5; // Configurable circle size
-    this.sizeRatio = isMobile() ? 1.1: 1.5; // Default size ratio
+    this.sizeRatio = isMobile() ? 1.1: 1.2; // Default size ratio
     
     this.handleResize = this.handleResize.bind(this);
     this.entryDots = [];
@@ -64,6 +65,7 @@ export class PlayScene extends Scene {
     
     this.createCircle();
     this.drawEntries();
+    this.keyboardControl = new KeyboardControl(this, this.entryDots);
     this.createSecondHand();
     window.addEventListener("resize", this.handleResize);
     

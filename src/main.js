@@ -13,6 +13,7 @@ const gameConfig = {
   parent: gameParent,
   type: Phaser.AUTO,
   backgroundColor: "#000000",
+  // resolution: window.devicePixelRatio,
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
