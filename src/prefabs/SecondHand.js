@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 
 export default class SecondHand extends Phaser.GameObjects.Container {
-  constructor(scene, x, y, radius, length = 5, color = 0x888888, thickness = 2) {
+  // Controls how many seconds it takes to complete one full circle
+  static REVOLUTION_DURATION = 60;
+  constructor(scene, x, y, radius, length = 5, color = 0x888888, thickness = 2, revolutionDuration = SecondHand.REVOLUTION_DURATION) {
     super(scene, x, y);
     
     this.radius = radius;
@@ -14,18 +16,21 @@ export default class SecondHand extends Phaser.GameObjects.Container {
     this.thickness = thickness;
     this.inCooldown = false;
     
-    // Clock-like behavior
-    this.tickTimer = null;
-    this.lastTick = 0;
+    // Revolution duration in seconds
+    this.revolutionDuration = revolutionDuration;
     
-    // Initialize second position to match the real second of the current time
-    const now = new Date();
-    this.currentSecond = now.getSeconds();
-    this.targetSecond = this.currentSecond;
-    this.isGliding = false;
+    // Track time for smooth movement
+    this.startTime = scene.time.now;
+    this.lastRotationTime = 0;
+    
+    // Last triggered angle for cooldown mechanism
+    this.lastTriggeredAngle = null;
+    this.triggerCooldownDuration = 3000; // 3 seconds cooldown between triggering dots
+    this.triggerCooldownActive = false;
+    this.triggerCooldownTimer = null;
     
     // Set initial rotation (12 o'clock is -PI/2)
-    this.rotation = (this.currentSecond / 60) * Math.PI * 2 - Math.PI / 2;
+    this.rotation = -Math.PI / 2;
     
     // Create the second hand line
     this.hand = scene.add.graphics();
@@ -41,108 +46,60 @@ export default class SecondHand extends Phaser.GameObjects.Container {
   update(time, delta) {
     if (this.isPaused) return;
     
-    // Handle smooth rotation
-    if (this.isGliding) {
-      // Animation is handled by the tween, so nothing to do here
-      return;
+    // Calculate how much time has passed since the start
+    // Total milliseconds elapsed
+    const elapsed = time - this.startTime;
+    
+    // Convert to seconds and apply modulo to repeat every revolutionDuration seconds
+    const progressSeconds = (elapsed / 1000) % this.revolutionDuration;
+    
+    // Calculate the rotation progress (0 to 1 for a full revolution)
+    const progressRatio = progressSeconds / this.revolutionDuration;
+    
+    // Calculate the angle (2π radians for a full circle)
+    const angle = progressRatio * Math.PI * 2;
+    
+    // Set the rotation with -Math.PI/2 offset to start at 12 o'clock
+    this.rotation = angle - Math.PI / 2;
+    
+    // Handle dot triggering
+    this.checkDotTrigger(angle);
+    
+    // If the hand completes a full second movement, emit the tick event
+    // This assumes we want 60 ticks per revolution regardless of duration
+    const secondIndex = Math.floor(progressRatio * 60);
+    const lastSecondIndex = Math.floor((this.lastRotationTime / 1000 % this.revolutionDuration) / this.revolutionDuration * 60);
+    
+    if (secondIndex !== lastSecondIndex) {
+      // Emit the tick event for components that depend on it
+      this.scene.events.emit('second-hand-tick', this);
     }
     
-    // Check if a second has passed
-    const currentTime = Math.floor(time / 1000); // Convert to seconds
-    
-    if (currentTime > this.lastTick) {
-      this.lastTick = currentTime;
-      this.tick();
-    }
+    // Store the current time for next comparison
+    this.lastRotationTime = elapsed;
   }
   
-  // Move the hand forward by one second (1/60th of a full rotation)
-  tick() {
-    // Calculate the next second
-    this.targetSecond = (this.currentSecond + 1) % 60;
+  // Set the revolution duration in seconds
+  setRevolutionDuration(seconds) {
+    // Save current progress position before changing the duration
+    const elapsed = this.scene.time.now - this.startTime;
+    const oldProgressRatio = (elapsed / 1000 % this.revolutionDuration) / this.revolutionDuration;
     
-    // Start the gliding animation
-    this.startGlide();
-  }
-  
-  // Start a smooth glide to the next position
-  startGlide() {
-    // Instead of directly animating rotation, we'll use a point on a circle
-    // This avoids rotation issues when crossing boundaries
-    this.isGliding = true;
+    // Update the duration
+    this.revolutionDuration = seconds;
     
-    // Calculate the new position
-    const nextAngle = (this.targetSecond / 60) * Math.PI * 2;
-    
-    // Calculate a point on a circle 
-    const pointX = Math.cos(nextAngle - Math.PI/2);
-    const pointY = Math.sin(nextAngle - Math.PI/2);
-    
-    // Create a tween to animate a dummy object
-    const dummy = { t: 0 };
-    
-    this.scene.tweens.add({
-      targets: dummy,
-      t: 1,
-      duration: 300, // 300ms for the gliding motion
-      ease: 'Cubic.easeInOut',
-      onUpdate: () => {
-        // Calculate the current angle using spherical interpolation
-        const currentAngle = this.lerpAngle(
-          (this.currentSecond / 60) * Math.PI * 2, 
-          nextAngle,
-          dummy.t
-        );
-        
-        // Set the rotation directly (no intermediate angles stored)
-        this.rotation = currentAngle - Math.PI/2;
-      },
-      onComplete: () => {
-        // Update the current second when glide is complete
-        this.currentSecond = this.targetSecond;
-        this.isGliding = false;
-        
-        // Emit an event when the second hand reaches its destination
-        this.scene.events.emit('second-hand-tick', this);
-        
-        // Add a delay before next movement (700ms pause)
-        this.scene.time.delayedCall(700, () => {
-          // Nothing to do here, the next tick will handle movement
-        });
-      }
-    });
-  }
-  
-  // Circular angle interpolation - handles wrapping correctly
-  lerpAngle(a, b, t) {
-    // Ensure angles are in the range [0, 2π]
-    a = ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    b = ((b % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    
-    // Find the shortest path
-    let delta = b - a;
-    
-    // Handle the case where going the other way around the circle is shorter
-    if (Math.abs(delta) > Math.PI) {
-      if (delta > 0) {
-        delta = delta - Math.PI * 2;
-      } else {
-        delta = delta + Math.PI * 2;
-      }
-    }
-    
-    // Linear interpolation with the correct delta
-    return a + delta * t;
+    // Adjust the start time to maintain the current position with the new duration
+    const newElapsedSeconds = oldProgressRatio * this.revolutionDuration;
+    this.startTime = this.scene.time.now - (newElapsedSeconds * 1000);
   }
   
   pauseRotation() {
     if (this.isPaused) return;
     
     this.isPaused = true;
-    this.isGliding = false;
     
-    // Stop any ongoing tweens on this object
-    this.scene.tweens.killTweensOf(this);
+    // Store the current elapsed time when paused
+    const currentElapsed = this.scene.time.now - this.startTime;
     
     // Clear any existing timer
     if (this.pauseTimer) {
@@ -151,8 +108,53 @@ export default class SecondHand extends Phaser.GameObjects.Container {
     
     // Create a new pause timer
     this.pauseTimer = this.scene.time.delayedCall(this.pauseDuration, () => {
+      // When resuming, adjust the start time to maintain proper position
+      this.startTime = this.scene.time.now - currentElapsed;
       this.isPaused = false;
-      this.lastTick = Math.floor(this.scene.time.now / 1000);
+    });
+  }
+  
+  // Check if we should trigger a dot based on the current position
+  checkDotTrigger(currentAngle) {
+    // Only skip if we're in cooldown or paused
+    if (this.triggerCooldownActive || this.isPaused) return;
+    
+    // Normalize angles to be between 0 and 2π
+    currentAngle = ((currentAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    
+    // Track the current angle for debugging or future use
+    this.lastTriggeredAngle = currentAngle;
+    
+    // Emit event to check for dot collisions on every frame
+    // Play.js will handle the actual collision detection
+    this.scene.events.emit('second-hand-dot-check', this);
+  }
+  
+  // Start a cooldown period after triggering a dot
+  startTriggerCooldown() {
+    if (this.triggerCooldownActive) return;
+    
+    this.triggerCooldownActive = true;
+    
+    // Make the second hand semi-transparent during cooldown
+    this.setAlpha(0.3);
+    
+    // Shorten the second hand to 1/3 of normal length
+    const normalLength = this.defaultLength;
+    this.setHandLength(normalLength / 3, true);
+    
+    // Clear any existing cooldown timer
+    if (this.triggerCooldownTimer) {
+      this.triggerCooldownTimer.remove();
+    }
+    
+    // Create a timer to end the cooldown
+    this.triggerCooldownTimer = this.scene.time.delayedCall(this.triggerCooldownDuration, () => {
+      this.triggerCooldownActive = false;
+      
+      // Restore full opacity and length
+      this.setAlpha(1);
+      this.setHandLength(normalLength, true);
     });
   }
   
@@ -227,6 +229,12 @@ export default class SecondHand extends Phaser.GameObjects.Container {
     }
   }
   
+  // Update the radius and redraw the hand to match the main circle's size
+  setRadius(newRadius) {
+    this.radius = newRadius;
+    this.redrawHand();
+  }
+
   // Helper function to calculate distance from a point to a line segment
   distanceFromPointToLine(px, py, x1, y1, x2, y2) {
     const A = px - x1;

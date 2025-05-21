@@ -75,13 +75,31 @@ export class PlayScene extends Scene {
     // Listen for second hand tick events
     this.events.on('second-hand-tick', this.onSecondHandTick, this);
     
+    // Listen for second hand dot check events
+    this.events.on('second-hand-dot-check', this.checkSecondHandDotCollision, this);
+    
     // Find and show the closest entry to current local time
     this.showClosestEntry();
+
+    let resizeTimeout = null;
+
+    this.scale.on('resize', () => {
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        window.location.reload();
+      }, 300); 
+    });
   }
   
+  // Traditional on-tick method (keeping for compatibility but not using for dot triggering)
   onSecondHandTick(secondHand) {
-    // Skip if we're in cooldown or the hand is paused
-    if (this.triggerCooldown || secondHand.isPaused) return;
+    // We're now using the checkSecondHandDotCollision method for dot triggering
+  }
+  
+  // New method to check for dot collisions with the second hand
+  checkSecondHandDotCollision(secondHand) {
+    // Skip if the hand is in cooldown or paused
+    if (secondHand.triggerCooldownActive || secondHand.isPaused) return;
     
     // Find the closest entry dot to the second hand
     const closestDot = this.findClosestEntryDot(secondHand);
@@ -90,24 +108,8 @@ export class PlayScene extends Scene {
       // Trigger the entry to be shown
       this.events.emit('entry-selected', closestDot.entry);
       
-      // Start cooldown period
-      this.triggerCooldown = true;
-      
-      // Make the second hand semi-transparent during cooldown
-      secondHand.setAlpha(0.3);
-      
-      // Shorten the second hand to 1/3 of normal length
-      const normalLength = secondHand.defaultLength;
-      secondHand.setHandLength(normalLength / 3, true);
-      
-      // Create a timer to end the cooldown after 3 seconds
-      this.time.delayedCall(3000, () => {
-        this.triggerCooldown = false;
-        
-        // Restore full opacity and length
-        secondHand.setAlpha(1);
-        secondHand.setHandLength(normalLength, true);
-      });
+      // Start cooldown period on the second hand
+      secondHand.startTriggerCooldown();
     }
   }
   
@@ -304,12 +306,14 @@ export class PlayScene extends Scene {
     window.removeEventListener("resize", this.handleResize);
     this.events.off('entry-selected', this.showEntry, this);
     this.events.off('second-hand-tick', this.onSecondHandTick, this);
+    this.events.off('second-hand-dot-check', this.checkSecondHandDotCollision, this);
   }
 
   destroy() {
     window.removeEventListener("resize", this.handleResize);
     this.events.off('entry-selected', this.showEntry, this);
     this.events.off('second-hand-tick', this.onSecondHandTick, this);
+    this.events.off('second-hand-dot-check', this.checkSecondHandDotCollision, this);
   }
 
   // Find the entry with timestamp closest to current local time

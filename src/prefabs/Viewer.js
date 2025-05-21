@@ -10,6 +10,7 @@ export default class Viewer extends Phaser.GameObjects.Sprite {
     this.entry = entry;
     this.setAlpha(0);
     this.setOrigin(0.5);
+    this.scene = scene;
 
     scene.add.existing(this);
 
@@ -42,6 +43,10 @@ export default class Viewer extends Phaser.GameObjects.Sprite {
     });
 
     scene.load.start();
+    
+    // Add method to handle resize
+    this.handleResize = this.handleResize.bind(this);
+    window.addEventListener('resize', this.handleResize);
   }
 
   // Method to scale the image to fit within a circular container
@@ -51,6 +56,30 @@ export default class Viewer extends Phaser.GameObjects.Sprite {
       targetDiameter / this.height
     );
     this.setScale(scaleFactor);
+  }
+
+  // Handle resize events
+  handleResize() {
+    // Calculate new target diameter based on updated circle size
+    const circleDiameter = this.scene.mainCircleSize || (Math.min(window.innerHeight, window.innerWidth) / 1.5);
+    this.targetDiameter = circleDiameter - 40;
+
+    // Center the image
+    this.x = this.scene.cameras.main.centerX;
+    this.y = this.scene.cameras.main.centerY;
+
+    // Update image scale
+    this.scaleToFit(this.targetDiameter);
+
+    // Update mask if it exists
+    if (this.maskImage && this.maskKey) {
+      const maskDiameter = Math.max(this.displayWidth, this.displayHeight);
+      // Update mask position
+      this.maskImage.setPosition(this.x, this.y);
+      // Update mask size
+      const scaledDiameter = maskDiameter * Viewer.MASK_SCALE;
+      this.maskImage.setDisplaySize(scaledDiameter, scaledDiameter);
+    }
   }
 
   // Method to create a blurred circular mask and apply it
@@ -77,7 +106,18 @@ export default class Viewer extends Phaser.GameObjects.Sprite {
       .setDisplaySize(scaledDiameter, scaledDiameter)
       .setVisible(false);
 
+    // Store the mask image for later updates
+    this.maskImage = maskImage;
+    this.maskKey = maskKey;
+    this.scaledMaskDiameter = scaledDiameter;
+
     const mask = scene.add.bitmapMask(maskImage);
     this.setMask(mask);
+  }
+
+  // Clean up event listener when destroyed
+  destroy(fromScene) {
+    window.removeEventListener('resize', this.handleResize);
+    super.destroy(fromScene);
   }
 }
