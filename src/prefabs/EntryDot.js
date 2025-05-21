@@ -66,19 +66,36 @@ export default class EntryDot extends Phaser.GameObjects.Sprite {
       const line2 = dt ? dt.toFormat('cccc, LLLL d') : '';
 
       const offset = 10;
-      let tooltipX, tooltipY, alignRight;
-      if (this.x < this.centerX) {
-        // Tooltip on left: right-align, position to left of dot
+      let tooltipX, tooltipY, alignRight, alignBottom;
+      const centerY = window.innerHeight / 2;
+      
+      // Determine quadrant (NW, NE, SW, SE)
+      const isNorth = this.y < centerY;
+      const isWest = this.x < this.centerX;
+      
+      // Set horizontal positioning
+      if (isWest) {
+        // For dots in the west (NW, SW), position tooltip to the left
         tooltipX = this.x - this.width / 2 - offset;
         alignRight = true;
       } else {
-        // Tooltip on right: left-align, position to right of dot
+        // For dots in the east (NE, SE), position tooltip to the right
         tooltipX = this.x + this.width / 2 + offset;
         alignRight = false;
       }
-      tooltipY = this.y - this.height / 2;
+      
+      // Set vertical positioning
+      if (isNorth) {
+        // For dots in the north (NW, NE), position tooltip above
+        tooltipY = this.y - this.height / 2 - offset;
+        alignBottom = true;
+      } else {
+        // For dots in the south (SW, SE), position tooltip below
+        tooltipY = this.y + this.height / 2 + offset;
+        alignBottom = false;
+      }
 
-      this.tooltip.show(line1, line2, tooltipX, tooltipY, alignRight);
+      this.tooltip.show(line1, line2, tooltipX, tooltipY, alignRight, alignBottom);
 
       // Show gray hover dot only if not active
       if (this.hoverDot) {
