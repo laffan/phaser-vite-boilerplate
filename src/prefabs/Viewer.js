@@ -13,8 +13,8 @@ export default class Viewer extends Phaser.GameObjects.Sprite {
 
     scene.add.existing(this);
 
-    const windowSize = Math.min(window.innerHeight, window.innerWidth);
-    const circleDiameter = windowSize / 1.5;
+    // Use the mainCircleSize from the scene if available
+    const circleDiameter = scene.mainCircleSize || (Math.min(window.innerHeight, window.innerWidth) / 1.5);
     this.targetDiameter = circleDiameter - 40;
 
     const key = `entry-img-${Phaser.Utils.String.UUID()}`;

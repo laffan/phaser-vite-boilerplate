@@ -2,7 +2,6 @@
 import Phaser from 'phaser';
 import isMobile from './helpers/isMobile';
 import { LoadScene } from './scenes/Load';
-import { Overlay } from './scenes/Overlay';
 import { PlayScene } from './scenes/Play';
 
 const gameParent = "game";
@@ -14,14 +13,14 @@ document.getElementById('loading').style.display = 'none';
 const gameConfig = {
   parent: gameParent,
   type: Phaser.AUTO,
-  backgroundColor: "#cfcfcf",
+  backgroundColor: "#000000",
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: '100%',
     height: '100%',
   },
-  scene: [LoadScene, PlayScene, Overlay],
+  scene: [LoadScene, PlayScene],
 };
 
 new Phaser.Game(gameConfig);

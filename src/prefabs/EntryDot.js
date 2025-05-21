@@ -3,20 +3,29 @@ import { DateTime } from 'luxon';
 
 export default class EntryDot extends Phaser.GameObjects.Sprite {
   static activeDot = null; // Static property to track the currently active dot
-  constructor(scene, x, y, entry, radius = 20, centerX = window.innerWidth / 2) {
-    const key = EntryDot.drawDot(scene, radius);
+  static NORMAL_RADIUS = 10; // Size when inactive
+  static ACTIVE_RADIUS = 20; // Size when active
+  
+  constructor(scene, x, y, entry, radius = EntryDot.ACTIVE_RADIUS, centerX = window.innerWidth / 2) {
+    // Create both textures - normal and active
+    const normalKey = EntryDot.drawDot(scene, EntryDot.NORMAL_RADIUS);
+    const activeKey = EntryDot.drawDot(scene, EntryDot.ACTIVE_RADIUS);
 
-    super(scene, x, y, key);
+    // Start with the normal texture
+    super(scene, x, y, normalKey);
 
     this.entry = entry;
     this.centerX = centerX;
-    this.radius = radius;
+    this.activeKey = activeKey;
+    this.normalKey = normalKey;
+    this.radius = EntryDot.NORMAL_RADIUS; // Start with normal radius
+    this.activeRadius = EntryDot.ACTIVE_RADIUS;
     this.setOrigin(0.5, 0.5);
 
     scene.add.existing(this);
     
     // Create inner dot (initially invisible)
-    this.innerDot = scene.add.circle(x, y, radius / 4, 0xffffff, 1);
+    this.innerDot = scene.add.circle(x, y, EntryDot.ACTIVE_RADIUS * 0.75, 0xffffff, 1);
     this.innerDot.setVisible(false);
 
     // Tooltip text object (hidden by default)
@@ -36,6 +45,11 @@ export default class EntryDot extends Phaser.GameObjects.Sprite {
       
       // Set this as the active dot
       EntryDot.setActiveDot(this);
+      
+      // Pause the second hand if it exists
+      if (this.scene.secondHand) {
+        this.scene.secondHand.pauseRotation();
+      }
     });
 
     this.on('pointerover', (pointer) => {
@@ -71,18 +85,35 @@ export default class EntryDot extends Phaser.GameObjects.Sprite {
     return DateTime.fromFormat(`${date} ${hour}${minute}`, 'yyyy-MM-dd HHmm');
   }
 
-  // Method to show the inner dot
+  // Method to show the inner dot and switch to active texture
   showInnerDot() {
     if (this.innerDot) {
       this.innerDot.setVisible(true);
     }
+    
+    // Switch to active texture
+    this.setTexture(this.activeKey);
+    this.radius = this.activeRadius; // Update the collision radius
+    
+    // Add a small visual effect
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0.8,
+      yoyo: true,
+      duration: 100,
+      ease: 'Power2'
+    });
   }
   
-  // Method to hide the inner dot
+  // Method to hide the inner dot and switch to normal texture
   hideInnerDot() {
     if (this.innerDot) {
       this.innerDot.setVisible(false);
     }
+    
+    // Switch to normal texture
+    this.setTexture(this.normalKey);
+    this.radius = EntryDot.NORMAL_RADIUS; // Update the collision radius
   }
   
   // Update the inner dot position when the main dot moves
